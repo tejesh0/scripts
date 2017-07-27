@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import numpy as np
 import matplotlib.pylab as plt
 # %matplotlib inline
@@ -21,3 +23,13 @@ def plti(image, h=8, **kwargs):
 
 
 plti(image)
+
+fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(48, 8))
+
+for c, ax in zip(range(3), axs):
+    tmp_image = np.zeros(image.shape, dtype="uint8")
+    tmp_image[:, :, c] = image[:, :, c]
+    ax.imshow(tmp_image)
+    ax.set_axis_off()
+
+
