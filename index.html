@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Pyramid Chart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        #pyramid_chart {
+            height: 32vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="pyramid_chart">
+
+    </div>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.2/d3.min.js"></script>
+    <script>
+        var selector = "pyramid_chart"
+        var dataSource = [
+            { Application: 'Apple', Issues: 240, Infra: 60, Resolved: 72, Open: 0, Reopened: 132 },
+            { Application: 'Facebook', Issues: 192, Infra: 48, Resolved: 24, Open: 96, Reopened: 72 },
+            { Application: 'Google', Issues: 72, Infra: 24, Resolved: 12, Open: 12, Reopened: 18.5 },
+            { Application: 'Instagram', Issues: 48, Infra: 6, Resolved: 0, Open: 0, Reopened: 6.5 },
+            { Application: 'Snapchat', Issues: 48, Infra: 6, Resolved: 0, Open: 0, Reopened: 0 }
+        ];
+        var keys = ['Issues', 'Infra', 'Resolved', 'Open', 'Reopened']
+        var colors = ["#6FA7E8", "#FF6DB3", "#F7B84F", "#DF88F1", "#98DC4E"]
+        pyramid()
+            .colors(colors)
+            .selector(selector)
+            .dataSource(dataSource)
+            .keys(keys)()
+
+        function pyramid() {
+            // setters and getters
+            chart.dataSource = function(value) {
+                /* @param {object} dataset to render the chart */
+                if (!arguments.length) return dataSource;
+                data = value;
+                return chart;
+            }
+
+            chart.selector = function (value) {
+                /* @param {string} id of parent div for the <svg> */
+                if (!arguments.length) {
+                    return selector;
+                }
+                selector = value;
+                return chart;
+            };
+
+            chart.keys = function (value) {
+                /* @param {array} id of parent div for the <svg> */
+                if (!arguments.length) {
+                    return keys;
+                }
+                keys = value;
+                return chart;
+            };
+
+            chart.colors = function (value) {
+                /* @param {string} id of parent div for the <svg> */
+                if (!arguments.length) {
+                    return colors;
+                }
+                colors = value;
+                return chart;
+            };
+
+            function chart() {
+                // Dimensions of the chart
+                // Set chart height and width based on parent element size
+                var width = document.getElementById(selector).offsetWidth
+                var height = document.getElementById(selector).offsetHeight
+
+                // Create SVG and g elements
+                var svg = d3.select("#" + selector)
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .attr("viewBox", "0 0 " + String(width) + " " + String(height))
+                    .attr("preserveAspectRatio", "xMinYMin meet")
+                var g = svg.append("g")
+                    
+                    var yScale = d3.scaleBand()
+                        .rangeRound([height, 0])
+                        .paddingInner(0.3)
+                        .align(0.1);
+
+                    var xScale = d3.scaleLinear()
+                        .rangeRound([0, width]);
+
+                    var colorScale = d3.scaleOrdinal()
+                        .range(colors);
+
+                    var max_total = 0
+
+                    data = data.map(function (value, index) {
+                        total = 0
+                        keys.forEach(function (key) {
+                            total += value[key]
+                        })
+                        value['total'] = total
+                        if (max_total < total)
+                            max_total = total
+                        return value
+                    })
+
+                    data.forEach(function (d) {
+                        d['translate_by'] = width * (1 - d['total'] / max_total) / 2
+                    })
+
+                    var stack = d3.stack()
+                        .keys(keys)
+                    var series = stack(data);
+
+                    yScale.domain(data.map(function (d) { return d.Application; }));
+                    xScale.domain([0, d3.max(series[series.length - 1], function (d) { return d[1]; })]);
+
+                    colorScale.domain(keys);
+
+                    g.selectAll("g")
+                        .data(series)
+                        .enter().append("g")
+                        .attr("fill", function (d) {
+                            return colorScale(d.key);
+                        })
+                        .selectAll("rect")
+                        .data(function (d) { return d; })
+                        .enter().append("rect")
+                        .attr("transform", function (d) {
+                            return "translate(" + d.data['translate_by'] + ", 0)"
+                        })
+                        .attr("y", function (d) { return yScale(d.data.Application); })
+                        .attr("x", function (d) { return xScale(d[0]); })
+                        .attr("width", function (d) {
+                            return -xScale(d[0]) + xScale(d[1]);
+                        })
+                        .attr("height", yScale.bandwidth());
+            }
+            return chart    
+        }
+    </script>
+</body>
+</html>
