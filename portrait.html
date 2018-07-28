@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Data Portraits</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+  </style>
+</head>
+
+<body>
+  <img id="portrait" src="rs.jpg" />
+
+  <script src="d3.min.js"></script>
+
+  <script>
+
+    init()
+
+    function init() {
+      var image = document.getElementById('portrait')
+      var blocks = 3000
+  
+      if (image.complete) {
+        // from cache
+        console.log("completed", image)
+        pixelate(image, blocks)
+      } else {
+        // on load
+        image.addEventListener('load', function () {
+          console.log("loaded", image)
+          pixelate(image, blocks)
+        })
+      }
+    }
+
+
+    function pixelate(image_el, blocks) {
+      // transfer <Img> element to <Canvas>
+      var canvas = document.createElement('canvas')
+      image_el.parentNode.insertBefore(canvas, image_el)
+      var canvas_width = canvas.width = image_el.width
+      var canvas_height = canvas.height = image_el.height
+      image_el.parentNode.removeChild(image_el)
+      var ctx = canvas.getContext("2d")
+      ctx.drawImage(image_el, 0, 0)
+
+      // Total blocks needed = blocks
+      // Width and Height are known
+      block_len = Math.floor(Math.sqrt((canvas_width * canvas_height) / blocks))
+
+      x_blocks_count = Math.ceil(canvas_width / block_len)
+      y_blocks_count = Math.ceil(canvas_height / block_len)
+
+      // console.log("block length", block_len)
+      // console.log("data length", data.length)
+      // console.log("x_blocks_count", x_blocks_count)
+      // console.log("y_blocks_count", y_blocks_count)
+      // TODO: to add margin at center/right/left 
+
+
+      var rects = []
+      var total_blocks = x_blocks_count * y_blocks_count
+      if (total_blocks < blocks) { console.log('ftw');}
+      for (var block_id = 1; block_id <= total_blocks; block_id += 1) {
+        var imgData = ctx.getImageData((block_len % x_blocks_count) * block_id, (block_len % y_blocks_count) * block_id, block_len, block_len)
+        var data = imgData.data
+        rects.push(getFrequentColor(data))
+      }
+
+      console.log(rects)
+      // create an svg of image length
+      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+      svg.setAttribute('height', y_blocks_count * block_len)
+      svg.setAttribute('width', x_blocks_count * block_len)
+      canvas.parentNode.insertBefore(svg, canvas)
+      canvas.parentNode.removeChild(canvas)
+      console.log("y blocks count", y_blocks_count, x_blocks_count, block_len)
+      // debugger
+      d3.select('svg')
+        .append('g')
+        .selectAll('rect')
+        .data(rects)
+        .enter()
+        .append('rect')
+        .attr('x', function(d, i) {
+          // console.log((i) % x_blocks_count)
+          return (i % x_blocks_count) * block_len
+        })
+        .attr('y', function(d, i) {
+          // console.log((i % x_blocks_count) * block_len, block_len * Math.floor(i / x_blocks_count))
+          return block_len * Math.floor(i / x_blocks_count)
+        })
+        .attr('width', block_len)
+        .attr('height', block_len)
+        .style('fill', function(d) {return 'rgba(' + d + ')'})
+
+    }
+
+    function getFrequentColor(rgba_data) {
+      var color_hasher = {}
+      var dominant_color, dominant_color_count = 0
+      for (var i = 0; i < rgba_data.length; i += 4) {
+        var key = rgba_data.slice(i, i + 4).join(',')
+        if(color_hasher[key])
+          color_hasher[key] += 1
+        else
+          color_hasher[key] = 1
+        
+        if (color_hasher[key] > dominant_color_count) {
+          dominant_color_count = color_hasher[key]
+          dominant_color = key
+        }
+      }
+      // console.log("dominant color", dominant_color)
+      return dominant_color
+    }
+  </script>
+
+</body>
+
+</html>
