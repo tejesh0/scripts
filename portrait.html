@@ -14,6 +14,7 @@
   <img id="portrait" src="rs.jpg" />
 
   <script src="d3.min.js"></script>
+  <script src="mmcq.js"></script>
 
   <script>
 
@@ -70,7 +71,7 @@
         rects.push(getFrequentColor(data))
       }
 
-      console.log(rects)
+      // console.log(rects)
       // create an svg of image length
       var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
       svg.setAttribute('height', y_blocks_count * block_len)
@@ -99,24 +100,36 @@
 
     }
 
-    function getFrequentColor(rgba_data) {
-      var color_hasher = {}
-      var dominant_color, dominant_color_count = 0
-      for (var i = 0; i < rgba_data.length; i += 4) {
-        var key = rgba_data.slice(i, i + 4).join(',')
-        if(color_hasher[key])
-          color_hasher[key] += 1
-        else
-          color_hasher[key] = 1
-        
-        if (color_hasher[key] > dominant_color_count) {
-          dominant_color_count = color_hasher[key]
-          dominant_color = key
-        }
+    function getFrequentColor(pixels) {
+      // Store the RGB values in an array format suitable for quantize function
+      var pixelArray = [];
+      for (var i = 0, offset, r, g, b, a; i < pixels.length; i = i + 4) {
+        offset = i * 4;
+        r = pixels[offset + 0];
+        g = pixels[offset + 1];
+        b = pixels[offset + 2];
+        a = pixels[offset + 3];
+        // If pixel is mostly opaque and not white
+        // if (a >= 125) {
+          // if (!(r > 250 && g > 250 && b > 250)) {
+            pixelArray.push([r, g, b, a]);
+          // }
+        // }
       }
-      // console.log("dominant color", dominant_color)
-      return dominant_color
+
+      // Send array to quantize function which clusters values
+      // using median cut algorithm
+      // console.log(mmcq())
+      var cmap = mmcq().quantize(pixelArray, 4);
+      // console.log(cmap)
+      var palette = cmap ? cmap.palette() : null;
+      console.log(palette)
+      return palette[0]
     }
+
+
+  
+  
   </script>
 
 </body>
